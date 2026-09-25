@@ -1,0 +1,27 @@
+#!/bin/sh
+set -e
+
+# Registra le librerie native di assistente-rs
+echo "/usr/lib/assistente-rs" > /etc/ld.so.conf.d/assistente-rs.conf
+ldconfig
+
+# Autostart XDG di sistema (attivo per tutti gli utenti che non lo disabilitano da KDE)
+mkdir -p /etc/xdg/autostart
+ln -sf /usr/share/applications/assistente-rs.desktop /etc/xdg/autostart/assistente-rs.desktop
+
+# Prepara le cartelle dati dell'utente reale che ha lanciato l'installazione.
+# dpkg/apt girano come root, quindi $HOME qui è quello di root: risolviamo
+# l'utente reale da SUDO_USER (sudo apt install...), con fallback al primo
+# utente "umano" (UID 1000-59999) se SUDO_USER non è impostata.
+REAL_USER="${SUDO_USER:-$(getent passwd | awk -F: '$3>=1000 && $3<60000 {print $1; exit}')}"
+if [ -n "$REAL_USER" ]; then
+    REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+    if [ -n "$REAL_HOME" ] && [ -d "$REAL_HOME" ]; then
+        mkdir -p "$REAL_HOME/.local/share/assistente-rs/whisper"
+        mkdir -p "$REAL_HOME/.local/share/assistente-rs/piper"
+        mkdir -p "$REAL_HOME/.local/share/assistente-rs/speaker-id"
+        chown -R "$REAL_USER:$REAL_USER" "$REAL_HOME/.local/share/assistente-rs"
+    fi
+fi
+
+exit 0
