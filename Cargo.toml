@@ -14,7 +14,12 @@ section = "utils"
 priority = "optional"
 maintainer-scripts = "packaging"
 assets = [
+
     ["target/release/assistente-rs", "usr/bin/assistente-rs", "755"],
+
+    ["target/release/libsherpa-onnx-c-api.so", "usr/lib/assistente-rs/libsherpa-onnx-c-api.so", "644"],
+    ["target/release/libsherpa-onnx-cxx-api.so", "usr/lib/assistente-rs/libsherpa-onnx-cxx-api.so", "644"],
+    ["target/release/libonnxruntime.so", "usr/lib/assistente-rs/libonnxruntime.so", "644"],
 
     ["packaging/assistente-rs.desktop", "usr/share/applications/assistente-rs.desktop", "644"],
 
@@ -98,12 +103,15 @@ sysinfo = "0.31"
 #dipendenza necessaria per GROQ - WHISPER ONLINE (client sincrono, no runtime async)
 reqwest = { version = "0.12", features = ["blocking", "multipart", "json"] }
 
+#dipendenza riconoscimento persona tramite la voce
+sherpa-rs = "0.6"
+
 # Chiusura finestre per titolo, solo su Windows (EnumWindows/PostMessage)
-[target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.58", features = [
-    "Win32_Foundation",
-    "Win32_UI_WindowsAndMessaging",
-] }
+#[target.'cfg(target_os = "windows")'.dependencies]
+#windows = { version = "0.58", features = [
+   # "Win32_Foundation",
+   # "Win32_UI_WindowsAndMessaging",
+#] }
 
 [features]
 default=[]
