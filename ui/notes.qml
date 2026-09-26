@@ -20,6 +20,8 @@ Window {
         property int savedWidth: 200
         property int savedHeight: 200
     }
+    // "python" o "rust" — impostata dal backend come context property (vedi sotto)
+    property color accentColor: "#CE7B32" //: "#3776AB"
 
     x: windowSettings.savedX
     y: windowSettings.savedY
@@ -42,8 +44,30 @@ Window {
         id: rectangle
         color: "#80000000"  // Semitrasparente
         radius: 10
+        border.color: accentColor
+        border.width: 2
         anchors.fill: parent
         anchors.margins: 10
+
+        Rectangle {
+            id: closeButton
+            width: 18
+            height: 18
+            radius: 3
+            color: "transparent"
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: 8
+            z: 10
+
+            Text {
+                anchors.centerIn: parent
+                text: "✕"
+                color: "white"
+                font.bold: true
+                font.pixelSize: 14
+            }
+        }
 
         Flickable {
             id: flickable
@@ -86,10 +110,10 @@ Window {
                         text: "Sposta"
                         onTriggered: mouseArea.moveMode = true;  // Attiva la modalità di spostamento
                     }
-                    MenuItem {
-                        text: "Chiudi"
-                        onTriggered: appWindow.close()
-                    }
+                    //MenuItem {
+                       // text: "Chiudi"
+                       // onTriggered: appWindow.close()
+                    //}
                 }
             }
 
@@ -136,7 +160,19 @@ Window {
         onPressed: (mouse) => {
 
              // --------------------------------------------------
-             // PRIMA controlla se siamo sul bordo della finestra
+             // PRIMA controlla se siamo sulla x di chiusura
+             // --------------------------------------------------
+
+              var closeMapped = mapToItem(closeButton, mouse.x, mouse.y);
+              if (closeButton.contains(closeMapped)) {
+                  if (mouse.button === Qt.LeftButton) {
+                      appWindow.close();
+                  }
+                  return;
+              }
+
+             // --------------------------------------------------
+             // POI controlla se siamo sul bordo della finestra
              // --------------------------------------------------
 
               if (mouse.button === Qt.LeftButton) {
