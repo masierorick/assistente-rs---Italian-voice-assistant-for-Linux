@@ -1,9 +1,23 @@
 use anyhow::Result;
+use serde::Deserialize;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
 use std::process::Command;
 use std::path::Path;
 use crate::audio_filter;
+
+#[derive(Debug, Deserialize)]
+struct Station {
+    name: String,
+    url: String,
+}
+
+fn load_stations(stations_json: &Path) -> Vec<Station> {
+    File::open(stations_json)
+        .ok()
+        .and_then(|file| serde_json::from_reader(BufReader::new(file)).ok())
+        .unwrap_or_default()
+}
 
 pub fn play_radio_stream(url: &str) -> Result<()> {
     // Ferma uno stream radio già in riproduzione, se presente, cosi'
@@ -19,36 +33,22 @@ pub fn play_radio_stream(url: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn search_and_play(comando: &str, stations_csv: &Path) {
-    if let Ok(file) = File::open(stations_csv) {
-        let reader = BufReader::new(file);
-        for line in reader.lines().flatten() {
-            let line = line.trim().to_string();
-            // Salta righe vuote e commenti (prima riga del CSV è un commento con #)
-            if line.is_empty() || line.starts_with('#') {
-                continue;
+pub fn search_and_play(comando: &str, stations_json: &Path) {
+    let comando_lower = comando.to_lowercase();
+    for stazione in load_stations(stations_json) {
+        if !stazione.name.is_empty()
+            && !stazione.url.is_empty()
+            && comando_lower.contains(&stazione.name.to_lowercase())
+        {
+            let _ = play_radio_stream(&stazione.url);
+            if let Ok(messages) = crate::config::load_messages() {
+                let msg = messages.other_messages["radio_station_opened"]
+                    .as_str()
+                    .unwrap_or("[missing: other_messages.radio_station_opened]")
+                    .replace("{stazione}", &stazione.name);
+                let _ = crate::tts::speak(&msg);
             }
-            // Formato CSV: Nome,url,  (tre campi, terzo vuoto)
-            // split_once prende solo il primo separatore → nome e "url,"
-            // Usiamo splitn per gestire correttamente
-            let parts: Vec<&str> = line.splitn(3, ',').collect();
-            if parts.len() >= 2 {
-                let nome = parts[0].trim();
-                let url = parts[1].trim();
-                if !nome.is_empty() && !url.is_empty()
-                    && comando.to_lowercase().contains(&nome.to_lowercase())
-                {
-                    let _ = play_radio_stream(url);
-                    if let Ok(messages) = crate::config::load_messages() {
-                        let msg = messages.other_messages["radio_station_opened"]
-                            .as_str()
-                            .unwrap_or("[missing: other_messages.radio_station_opened]")
-                            .replace("{stazione}", nome);
-                        let _ = crate::tts::speak(&msg);
-                    }
-                    return;
-                }
-            }
+            return;
         }
     }
     if let Ok(messages) = crate::config::load_messages() {
@@ -72,24 +72,15 @@ pub fn stop_radio() {
 }
 
 /// Restituisce la lista delle stazioni come testo formattato
-pub fn lista_stazioni(stations_csv: &Path) -> String {
+pub fn lista_stazioni(stations_json: &Path) -> String {
     let intestazione = crate::config::load_messages()
         .ok()
         .and_then(|m| m.other_messages["radio_list_header"].as_str().map(|s| s.to_string()))
         .unwrap_or_else(|| "[missing: other_messages.radio_list_header]".to_string());
     let mut testo = format!("{}\n", intestazione);
-    if let Ok(file) = File::open(stations_csv) {
-        let reader = BufReader::new(file);
-        for line in reader.lines().flatten() {
-            let line = line.trim().to_string();
-            if line.is_empty() || line.starts_with('#') {
-                continue;
-            }
-            if let Some(nome) = line.splitn(3, ',').next() {
-                testo.push_str(nome.trim());
-                testo.push('\n');
-            }
-        }
+    for stazione in load_stations(stations_json) {
+        testo.push_str(&stazione.name);
+        testo.push('\n');
     }
     testo
 }

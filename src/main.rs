@@ -215,7 +215,7 @@ fn main() -> Result<()> {
                                                             messages_clone,
                                                             std::path::PathBuf::from("data/listaprogrammi"),
                                                             std::path::PathBuf::from("data/bookmarks"),
-                                                            std::path::PathBuf::from("data/stations.csv"),
+                                                            std::path::PathBuf::from("data/stations.json"),
                                                             tx_output_lp.clone(),
         );
 

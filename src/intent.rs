@@ -661,7 +661,8 @@ pub struct IntentHandler {
     pub messages: Value,
     pub listaprogrammi: PathBuf,
     pub listabookmarks: PathBuf,
-    pub stations_csv: PathBuf,
+    /// Percorso di data/stations.json (elenco stazioni radio in formato JSON)
+    pub stations_json: PathBuf,
     pub youtube_open: bool,
     pub awaiting_shutdown: bool,
     pub awaiting_reboot: bool,
@@ -695,7 +696,7 @@ impl IntentHandler {
         messages: Value,
         listaprogrammi: PathBuf,
         listabookmarks: PathBuf,
-        stations_csv: PathBuf,
+        stations_json: PathBuf,
         tx_output: Sender<String>,
     ) -> Self {
         Self {
@@ -705,7 +706,7 @@ impl IntentHandler {
             messages,
             listaprogrammi,
             listabookmarks,
-            stations_csv,
+            stations_json,
             youtube_open: false,
             awaiting_shutdown: false,
             awaiting_reboot: false,
@@ -1058,7 +1059,7 @@ impl IntentHandler {
                 tts::speak(&msg_radio_off)?;
                 radio::stop_radio();
             } else if contiene(&c, &obj_list) {
-                let lista = radio::lista_stazioni(&self.stations_csv);
+                let lista = radio::lista_stazioni(&self.stations_json);
                 println!("{}", lista);
                 crate::ui::mostra_nota(&lista);
                 tts::speak(&msg_radio_list)?;
@@ -1080,9 +1081,9 @@ impl IntentHandler {
                         }
                     }
                 } else if contiene(&c, &cmd_change) || contiene(&c, &cmd_open) {
-                    radio::search_and_play(&c, &self.stations_csv);
+                    radio::search_and_play(&c, &self.stations_json);
                 } else {
-                    radio::search_and_play(&c, &self.stations_csv);
+                    radio::search_and_play(&c, &self.stations_json);
                 }
                 return Ok(());
         }
